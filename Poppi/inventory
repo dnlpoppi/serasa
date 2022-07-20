@@ -1,0 +1,5 @@
+[serverip]
+serasa ip_addr=127.0.0.1  interface=ethr0 mask=255.255.255.255 gw=255.255.255.0
+
+[zabbix-agent]
+zabbix

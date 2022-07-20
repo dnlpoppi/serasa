@@ -1,0 +1,91 @@
+   
+  - block:
+  
+    - name: fail when zbx_ln_rpm is not defined
+      fail: msg="zbx_ln_rpm must be defined and cannot be blank"
+      when: zbx_ln_rpm is not defined or zbx_ln_rpm == ''
+    
+    - name: fail when ln_zbx_srv is not defined
+      fail: msg="ln_zbx_srv must be defined and cannot be blank"
+      when: ln_zbx_srv is not defined or ln_zbx_srv == ''
+
+    - name: fail when ansible_host is not defined
+      fail: msg="ansible_host must be defined and cannot be blank"
+      when: ansible_host is not defined or ansible_host == ''
+      
+    - name: Install Zabbix Agent RHEL/CentOS
+      yum:
+        name: "{{ zbx_ln_rpm }}"
+	  
+    - name: Configure Zabbix Agent
+      replace: 
+        path: "/etc/zabbix/zabbix_agentd.conf"
+        regexp: '{{item.regexp}}'
+        replace: '{{item.replace}}'
+      with_items:
+        - {regexp: "^Server=127.0.0.1$", replace: "Server={{ ln_zbx_srv }}"}
+        - {regexp: "^ServerActive=127.0.0.1$", replace: "ServerActive={{ ln_zbx_srv }}"}
+        - {regexp: "^Hostname=Zabbix server$", replace: "Hostname={{ ansible_host }}"}
+    
+    - name: Start Agent
+      service:
+        name: zabbix-agent
+        state: started
+        enabled: yes
+
+  when: ansible_os_family == "Redhat" or ansible_os_family == "CentOS"
+
+  - block:
+  
+    - name: fail when zbx_win_msi is not defined
+      fail: msg="zbx_win_msi must be defined and cannot be blank"
+      when: zbx_win_msi is not defined or zbx_win_msi == ''
+      
+    - name: fail when zbx_file is not defined
+      fail: msg="zbx_file must be defined and cannot be blank"
+      when: zbx_file is not defined or zbx_file == ''
+      
+    - name: fail when win_zabbix_server is not defined
+      fail: msg="win_zabbix_server must be defined and cannot be blank"
+      when: win_zabbix_server is not defined or win_zabbix_server == ''
+      
+    - name: fail when win_listenport is not defined
+      fail: msg="win_listenport must be defined and cannot be blank"
+      when: win_listenport is not defined or win_listenport == ''
+      
+    - name: fail when win_listen_ip is not defined
+      fail: msg="win_listen_ip must be defined and cannot be blank"
+      when: win_listen_ip is not defined or win_listen_ip == ''
+      
+    - name: fail when win_zabbix_server_active is not defined
+      fail: msg="win_zabbix_server_active must be defined and cannot be blank"
+      when: win_zabbix_server_active is not defined or win_zabbix_server_active == ''
+           
+    - name: download Zabbix Installation file
+      win_get_url:
+        url: "{{ zbx_win_msi }}"
+        dest: "C:\Windows\Temp\"
+        
+    - name: Install zabbix agent from msi and wait installation finish
+      win_msi:
+        path: "C:\Windows\Temp\{{ zbx_file }}"
+        wait: true
+        creates: "C:\Program Files\Zabbix Agent\zabbix_agentd.exe"
+	  
+    - name: Configure Zabbix Agent
+      win_templates: 
+        src: "templates/zabbix_agentd.conf.j2"
+        dest: "C:\Program Files\Zabbix Agent\zabbix_agentd.conf"
+	  
+    - name: Restart Zabbix Agent service
+      win_service:
+        name: Zabbix Agent
+        state: restarted
+    
+    - name: Set Zabbix Agent service startup mode to auto and ensure it is started
+      win_service:
+        name: Zabbix Agent
+        start_mode: auto
+        state: started
+     
+  when: ansible_os_family == "Windows"

@@ -1,0 +1,10 @@
+change_ip.yml
+---
+- hosts: serverip
+    roles:
+      - change-ip
+      
+- hosts: zabbix-agent
+    roles:
+      - install-zbx-agent
+    become: yes

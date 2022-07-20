@@ -1,0 +1,30 @@
+  - name: fail when ip_addr is not defined
+    fail: msg="ip_addr must be defined and cannot be blank"
+    when: ip_addr is not defined or ip_addr == ''
+    
+  - name: fail when interface is not defined
+    fail: msg="interface must be defined and cannot be blank"
+    when: interface is not defined or interface == ''
+    
+  - name: fail when mask is not defined
+    fail: msg="mask must be defined and cannot be blank"
+    when: mask is not defined or mask == ''
+
+  - name: fail when gw is not defined
+    fail: msg="gw must be defined and cannot be blank"
+    when: gw is not defined or gw == ''
+
+  - name: Change IP Windows
+    connection: winrm
+    win_psexec:
+      command: powershell.exe New-NetIPAddress -InterfaceIndex "{{ interface }}" -IPAddress "{{ ip_addr }}" -PrefixLength "{{ mask }}" -DefaultGateway "{{ gw }}"
+    when: ansible_os_family == "Windows"
+
+  - name: Change IP Linux
+    connection: ssh
+    become: yes
+    ip: "{{ ip_addr }}"
+    interface: "{{ interface }}"
+    mask: "{{ mask }}"
+    gateway: "{{ gw }}"
+    when: ansible_os_family == "Redhat" or ansible_os_family == "CentOS"
